@@ -68,6 +68,7 @@ curl http://v0.api.upyun.com/<bucket> \
 | expiration            | 是   	| 请求的过期时间，UNIX UTC 时间戳，单位秒。建议设为 30 分钟              	|
 | date            		| 否   	| 请求日期时间，GMT 格式字符串 ([RFC 1123](http://tools.ietf.org/html/rfc1123))，如 `Wed, 29 Oct 2014 02:26:58 GMT` |
 | content-md5           | 否   	| 上传文件的 MD5 值，如果请求中文件太大计算 MD5 不方便，可以为空 	|
+| content-length        | 否   	| 上传文件的长度，可以为空，如果使用表单上传较大的文件时必须要加入此参数，具体见 [表单流式上传](#form_stream)	|
 | return-url            | 否   	| 同步通知 URL，见 [通知规则](#notify_return) |
 | notify-url            | 否   	| 异步通知 URL，见 [通知规则](#notify_return)  |
 | content-secret        | 否   	| 文件密钥，用于保护文件，防止文件被直接访问，见 [Content-Secret 参数说明](/api/rest_api/#Content-Secret)         |
@@ -135,6 +136,48 @@ http://yourdomain.com/return/?code=200&message=ok&url=%2F2011%2F12%2Ffd0e30047f8
 
 * 如果没有设置 `notify-url`，不发起异步通知。
 * 如果设置了 `notify-url`，文件上传完成后，向 `notify-url` 发送 `HTTP POST` 请求，请求体是回调信息。回调信息是 JSON 字符串，内容和 `return-url` 中的[结果信息](#notify_return)相同。回调通知签名，见[签名认证](/api/authorization/#header)，它提供给客户端用于验证回调通知的合法性。
+
+---------
+
+<a name="form_stream"></a>
+## 表单流式上传
+
+表单上传支持上传预处理，文件较大时预处理操作会导致上传超时(文件越大需要处理的时间越长)，所以提供表单流式上传方案，满足表单大文件上传的需求
+
+在表单上传的基础上，需要完成如下修改:
+- 在[上传参数](#upload_args)中加入 `content-length` 参数，指定文件长度。
+- 确保三个字段 `authorization`，`policy`，`file` 中，`file` 处于最后的位置
+
+**举例说明**
+
+```
+policy 中加入文件长度 content-length
+POLICY = {
+    'bucket': 'bucket1',
+    'expiration': 1509200758,
+    'content-length': 10,
+    'save-key': '/img1.txt',
+}
+```
+
+```
+file 字段处于最后的位置
+POST /bucket1 HTTP/1.1
+Host: v0.api.upyun.com
+Content-Type: multipart/form-data; boundary=xxxxxxx
+Content-Length: 386
+--xxxxxxx.
+Content-Disposition: form-data; name="policy"
+eyJjb250ZW50LWxlbmd0aCI6IDEwLCAiYnVja2V0IjogImJ1Y2tldDEiLCAiZXhwaXJhdGlvbiI6IDE1MDkyMDA3NTgsICJzYXZlLWtleSI6ICIvaW1nMS50eHQifQ==
+--xxxxxxx
+Content-Disposition: form-data; name="signature"
+48f7ccda45cc3a5e25f4eb5eb1d6dbba
+--xxxxxxx
+Content-Disposition: form-data; name="file"; filename=abc.txt.
+d63..`PPq.
+--xxxxxxx--
+```
+
 
 ---------
 
