@@ -302,7 +302,43 @@ GET /<bucket>/path/to/folder
 | x-list-iter    |  否  | string  | 分页开始位置，通过`x-upyun-list-iter` 响应头返回，所以第一次请求不需要填写      |
 | x-list-limit   |  否  | string  | 获取的文件数量，默认 100，最大 10000                           |
 | x-list-order   |  否  | string  | `asc` 或 `desc`，按时间升序或降序排列。默认 `asc`               |
+| x-list-prefix  |  否  | string  | `/path/to/folder` 下过滤满足该前缀的文件或目录                  |
+| x-list-folder  |  否  | string  | 配合 `x-list-prefix` 使用， 默认为 `false`， 代表过滤文件， `true` 为过滤目录  |
 
+**响应信息**
+
+- 获取成功：返回 `200`。
+- 获取失败：返回相应的出错信息，具体请参阅「[API 错误码表](/api/errno/)」。
+
+例如：
+
+```
+> HTTP/1.1 200 OK
+> x-upyun-list-iter: c2Rmc2Rsamdvc2pnb3dlam9pd2Vmd2Z3Zg==
+foo.jpg\tN\t4237\t1415096225\nbar\tF\t423404\t1415096260
+```
+
+- `x-upyun-list-iter` 返回下一次分页开始位置。它由一串 Base64 编码的随机数组成，当它是 `g2gCZAAEbmV4dGQAA2VvZg` 时，表示**最后一个分页**。
+- HTTP body 为各个文件/目录的信息，文件/目录之间以 `\n` 分隔，属性按 「文件\t类型\t大小\t最后修改时间」 排列，类型可选值：`N` 表示文件，`F` 表示目录。
+
+---------
+
+## 按时间获取目录文件列表
+
+```
+GET /<bucket>/path/to/folder?files
+```
+
+**分页参数**
+
+如果目录中文件数量过多，为了更友好的获取文件信息，可以分页获取：
+
+|      参数       | 必选 |   类型  |                    说明                                 |
+|--------------- |------|--------|-------------------------------------------------------------|
+| x-list-start   |  是  | string  | UNIX UTC 时间戳，单位秒                      |
+| x-list-end     |  是  | string  | UNIX UTC 时间戳，单位秒                      |
+| x-list-iter    |  否  | string  | 分页开始位置，通过`x-upyun-list-iter` 响应头返回，所以第一次请求不需要填写      |
+| x-list-limit   |  否  | string  | 获取的文件数量，默认 100，最大 10000                           |
 
 **响应信息**
 
